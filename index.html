@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Snake Arcade</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            text-align: center;
+            color: #00ffcc;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px #00ffcc, 0 0 40px #00ffcc;
+            letter-spacing: 3px;
+        }
+
+        .game-area {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            max-width: 360px;
+            border: 4px solid #00ffcc;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.5), inset 0 0 30px rgba(0, 255, 204, 0.1);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            background-color: #0a0a1a;
+            width: 100%;
+            height: 100%;
+        }
+
+        .menu-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 26, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            padding: 20px;
+        }
+
+        .menu-overlay.hidden {
+            display: none;
+        }
+
+        .menu-title {
+            color: #00ffcc;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #00ffcc;
+            text-align: center;
+        }
+
+        .difficulty-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .diff-btn {
+            padding: 8px 16px;
+            font-size: 0.8rem;
+            font-family: 'Orbitron', sans-serif;
+            background: transparent;
+            border: 2px solid #ff00ff;
+            color: #ff00ff;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .diff-btn:hover, .diff-btn.active {
+            background: #ff00ff;
+            color: white;
+            box-shadow: 0 0 15px #ff00ff;
+        }
+
+        .menu-btn {
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-family: 'Orbitron', sans-serif;
+            background: transparent;
+            border: 2px solid #00ffcc;
+            color: #00ffcc;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 6px;
+            transition: all 0.3s;
+            width: 180px;
+        }
+
+        .menu-btn:hover {
+            background: #00ffcc;
+            color: #0a0a1a;
+            box-shadow: 0 0 20px #00ffcc;
+            transform: scale(1.05);
+        }
+
+        .settings-box {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border: 1px solid #00ffcc;
+            width: 90%;
+        }
+
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+            color: #fff;
+            font-size: 0.8rem;
+        }
+
+        input[type="color"] {
+            width: 40px;
+            height: 30px;
+            border: none;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        input[type="range"] {
+            width: 80px;
+            cursor: pointer;
+        }
+
+        .hud {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            display: flex;
+            justify-content: space-between;
+            color: white;
+            font-size: 0.8rem;
+            z-index: 5;
+            text-shadow: 2px 2px 4px black;
+        }
+
+        .score-value {
+            color: #00ffcc;
+            font-weight: bold;
+        }
+
+        .game-over-text {
+            color: #ff4444;
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            text-shadow: 0 0 20px #ff4444;
+        }
+
+        .final-score {
+            color: white;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+
+        /* Mobile Controls */
+        .mobile-controls {
+            display: none;
+            width: 100%;
+            max-width: 360px;
+            margin-top: 15px;
+            padding: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-controls {
+                display: block;
+            }
+            
+            .container {
+                max-width: 100%;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .game-area {
+                max-width: calc(100vw - 20px);
+            }
+        }
+
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 5px;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+        }
+
+        .d-btn {
+            background: rgba(0, 255, 204, 0.2);
+            border: 2px solid #00ffcc;
+            border-radius: 10px;
+            color: #00ffcc;
+            font-size: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.1s;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .d-btn:active {
+            background: rgba(0, 255, 204, 0.5);
+            transform: scale(0.95);
+        }
+
+        .d-btn.empty {
+            background: transparent;
+            border: none;
+        }
+
+        .d-btn.up { grid-column: 2; grid-row: 1; }
+        .d-btn.left { grid-column: 1; grid-row: 2; }
+        .d-btn.right { grid-column: 3; grid-row: 2; }
+        .d-btn.down { grid-column: 2; grid-row: 3; }
+
+        /* Swipe detection */
+        .swipe-area {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 4;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🐍 NEON SNAKE</h1>
+        
+        <div class="game-area">
+            <canvas id="gameCanvas" width="360" height="360"></canvas>
+            
+            <div class="swipe-area" id="swipeArea"></div>
+            
+            <div class="hud" id="hud" style="display: none;">
+                <div>Score: <span class="score-value" id="scoreDisplay">0</span></div>
+                <div>High Score: <span class="score-value" id="highScoreDisplay">0</span></div>
+            </div>
+
+            <!-- Main Menu -->
+            <div class="menu-overlay" id="mainMenu">
+                <div class="menu-title">NEON SNAKE</div>
+                
+                <div class="difficulty-buttons">
+                    <button class="diff-btn" onclick="setDifficulty('easy')">Easy</button>
+                    <button class="diff-btn active" onclick="setDifficulty('medium')">Medium</button>
+                    <button class="diff-btn" onclick="setDifficulty('hard')">Hard</button>
+                </div>
+
+                <button class="menu-btn" onclick="toggleSettings()">⚙️ Options</button>
+                
+                <div class="settings-box" id="settingsPanel" style="display: none;">
+                    <div class="setting-row">
+                        <span>Snake Color</span>
+                        <input type="color" id="snakeColor" value="#00ffcc">
+                    </div>
+                    <div class="setting-row">
+                        <span>Food Color</span>
+                        <input type="color" id="foodColor" value="#ff00ff">
+                    </div>
+                </div>
+
+                <button class="menu-btn" onclick="startGame()">▶ START</button>
+                <p style="color: #666; font-size: 0.7rem; margin-top: 10px;">Use On-Screen Buttons or Swipe</p>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div class="menu-overlay hidden" id="gameOverScreen">
+                <div class="game-over-text">GAME OVER</div>
+                <div class="final-score">Final Score: <span id="finalScore">0</span></div>
+                <button class="menu-btn" onclick="resetToMenu()">🏠 Menu</button>
+                <button class="menu-btn" onclick="startGame()">🔄 Retry</button>
+            </div>
+        </div>
+
+        <!-- Mobile D-Pad Controls -->
+        <div class="mobile-controls" id="mobileControls">
+            <div class="d-pad">
+                <div class="d-btn empty"></div>
+                <div class="d-btn up" onclick="handleDirection('up')">▲</div>
+                <div class="d-btn empty"></div>
+                <div class="d-btn left" onclick="handleDirection('left')">◀</div>
+                <div class="d-btn empty"></div>
+                <div class="d-btn right" onclick="handleDirection('right')">▶</div>
+                <div class="d-btn empty"></div>
+                <div class="d-btn down" onclick="handleDirection('down')">▼</div>
+                <div class="d-btn empty"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game Configuration
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const gridSize = 18;
+        const tileCount = 20; // 360 / 18 = 20 tiles
+        
+        let gameInterval;
+        let snake = [];
+        let food = {};
+        let velocity = { x: 0, y: 0 };
+        let score = 0;
+        let highScore = localStorage.getItem('snakeHighScore') || 0;
+        let isRunning = false;
+        let currentDifficulty = 'medium';
+        
+        // Settings
+        let settings = {
+            bgColor: '#0a0a1a',
+            snakeColor: '#00ffcc',
+            foodColor: '#ff00ff',
+            brightness: 100
+        };
+
+        // Speed settings (milliseconds)
+        const speeds = {
+            easy: 180,
+            medium: 120,
+            hard: 70
+        };
+
+        // Touch/Swipe variables
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+
+        // Initialize
+        document.getElementById('highScoreDisplay').textContent = highScore;
+
+        // Event Listeners
+        document.addEventListener('keydown', handleKeyPress);
+
+        // Touch event listeners for swipe
+        document.getElementById('swipeArea').addEventListener('touchstart', handleTouchStart, { passive: false });
+        document.getElementById('swipeArea').addEventListener('touchmove', handleTouchMove, { passive: false });
+        document.getElementById('swipeArea').addEventListener('touchend', handleTouchEnd, { passive: false });
+
+        // Also allow swiping on canvas area when game is running
+        canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+        canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+        function handleTouchStart(e) {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault(); // Prevent scrolling
+        }
+
+        function handleTouchEnd(e) {
+            if (!isRunning) return;
+            
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            
+            handleSwipe();
+        }
+
+        function handleSwipe() {
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+            const minSwipe = 30;
+            
+            if (Math.abs(diffX) < minSwipe && Math.abs(diffY) < minSwipe) {
+                return; // Too small to be a swipe
+            }
+            
+            // Determine if horizontal or vertical swipe is dominant
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                // Horizontal
+                if (diffX > 0) {
+                    handleDirection('right');
+                } else {
+                    handleDirection('left');
+                }
+            } else {
+                // Vertical
+                if (diffY > 0) {
+                    handleDirection('down');
+                } else {
+                    handleDirection('up');
+                }
+            }
+        }
+
+        function handleDirection(direction) {
+            if (!isRunning) return;
+            
+            switch(direction) {
+                case 'left':
+                case 'ArrowLeft':
+                case 'a':
+                    if (velocity.x !== 1) velocity = { x: -1, y: 0 };
+                    break;
+                case 'up':
+                case 'ArrowUp':
+                case 'w':
+                    if (velocity.y !== 1) velocity = { x: 0, y: -1 };
+                    break;
+                case 'right':
+                case 'ArrowRight':
+                case 'd':
+                    if (velocity.x !== -1) velocity = { x: 1, y: 0 };
+                    break;
+                case 'down':
+                case 'ArrowDown':
+                case 's':
+                    if (velocity.y !== -1) velocity = { x: 0, y: 1 };
+                    break;
+            }
+        }
+
+        // Functions
+        function setDifficulty(level) {
+            currentDifficulty = level;
+            document.querySelectorAll('.diff-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function startGame() {
+            // Hide menus
+            document.getElementById('mainMenu').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('hud').style.display = 'flex';
+            
+            // Show mobile controls
+            document.getElementById('mobileControls').style.display = 'block';
+            
+            // Reset game
+            snake = [
+                { x: 10, y: 10 },
+                { x: 9, y: 10 },
+                { x: 8, y: 10 }
+            ];
+            score = 0;
+            document.getElementById('scoreDisplay').textContent = score;
+            
+            // Random direction
+            const directions = [
+                { x: 1, y: 0 }, { x: -1, y: 0 },
+                { x: 0, y: 1 }, { x: 0, y: -1 }
+            ];
+            velocity = directions[Math.floor(Math.random() * directions.length)];
+            
+            spawnFood();
+            isRunning = true;
+            
+            // Apply current settings
+            canvas.style.backgroundColor = settings.bgColor;
+            
+            // Start game loop
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(update, speeds[currentDifficulty]);
+        }
+
+        function resetToMenu() {
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('mainMenu').classList.remove('hidden');
+            document.getElementById('hud').style.display = 'none';
+            document.getElementById('mobileControls').style.display = 'none';
+            
+            // Draw initial background
+            ctx.fillStyle = settings.bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function gameOver() {
+            isRunning = false;
+            clearInterval
